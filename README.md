@@ -1,4 +1,4 @@
-# 🌐 Live Domain Checker with Real-Time Results & PDF Export
+<img width="1720" height="899" alt="image" src="https://github.com/user-attachments/assets/475897cd-d16a-486f-baff-d34709dd2edb" /># 🌐 Live Domain Checker with Real-Time Results & PDF Export
 
 A simple yet powerful web-based tool to **check domain availability in real-time**, visualize results with **interactive charts**, and **export reports to PDF** — all running locally.
 
@@ -8,7 +8,9 @@ Perfect for:
 - Web developers
 - Cybersecurity checks
 
-![Screenshot](screenshots/screenshot.png) *(Optional: Add a screenshot later)*
+<img width="1720" height="899" alt="image" src="https://github.com/user-attachments/assets/8c8e206d-b9dc-4040-8619-31f7d16b4dfe" />
+
+
 
 ---
 
@@ -31,3 +33,11 @@ Perfect for:
 ```bash
 git clone https://github.com/your-username/domain-checker.git
 cd domain-checker
+
+python3 -m venv venv
+source venv/bin/activate   # Linux/Mac
+# venv\Scripts\activate    # Windows
+
+pip install -r requirements.txt
+
+python3 server.py
