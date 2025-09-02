@@ -1,4 +1,4 @@
-<img width="1720" height="899" alt="image" src="https://github.com/user-attachments/assets/475897cd-d16a-486f-baff-d34709dd2edb" /># 🌐 Live Domain Checker with Real-Time Results & PDF Export
+🌐 Live Domain Checker with Real-Time Results & PDF Export
 
 A simple yet powerful web-based tool to **check domain availability in real-time**, visualize results with **interactive charts**, and **export reports to PDF** — all running locally.
 
@@ -10,6 +10,7 @@ Perfect for:
 
 <img width="1720" height="899" alt="image" src="https://github.com/user-attachments/assets/8c8e206d-b9dc-4040-8619-31f7d16b4dfe" />
 
+<img width="1709" height="895" alt="image" src="https://github.com/user-attachments/assets/0d25b182-b28a-47ec-a5e4-988d4afc21aa" />
 
 
 ---
