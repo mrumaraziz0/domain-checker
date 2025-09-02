@@ -9,6 +9,7 @@ from io import BytesIO
 import weasyprint
 from datetime import datetime
 import json
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 
@@ -88,10 +89,10 @@ def save_domains():
 
 @app.route("/api/check", methods=["POST"])
 def check_domains():
-    """Stream domain check results using proper format"""
+    """Stream domain check results using multithreading"""
     data = request.get_json()
     domains = data.get("domains", [])
-    
+
     if not domains:
         def gen():
             yield "data: " + json.dumps({"error": "No domains provided"}) + "\n\n"
@@ -99,17 +100,25 @@ def check_domains():
 
     def event_stream():
         results = []
-        for domain in domains:
-            result = check_domain(domain)
-            results.append(result)
-            yield "data: " + json.dumps({
-                "type": "result",
-                "data": result,
-                "progress": {
-                    "completed": len(results),
-                    "total": len(domains)
-                }
-            }) + "\n\n"
+        max_workers = 10  # Adjust based on system capacity
+
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_domain = {executor.submit(check_domain, domain): domain for domain in domains}
+            completed = 0
+
+            for future in as_completed(future_to_domain):
+                result = future.result()
+                results.append(result)
+                completed += 1
+
+                yield "data: " + json.dumps({
+                    "type": "result",
+                    "data": result,
+                    "progress": {
+                        "completed": completed,
+                        "total": len(domains)
+                    }
+                }) + "\n\n"
 
         # Save final results
         with open(RESULTS_FILE, "w") as f:
@@ -222,4 +231,4 @@ def report_pdf():
 if __name__ == "__main__":
     print("🌍 Starting server at http://localhost:5000")
     print("💡 Open your browser and go to: http://localhost:5000")
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5001, debug=True)
