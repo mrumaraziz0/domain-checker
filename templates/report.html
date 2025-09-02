@@ -1,54 +1,24 @@
+<!-- templates/report.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
     <title>Domain Check Report</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 40px;
-            background: #fff;
-            color: #333;
-        }
-        h1, h2 {
-            text-align: center;
-            color: #2c3e50;
-        }
-        .chart {
-            text-align: center;
-            margin: 30px 0;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-        }
-        th, td {
-            padding: 12px;
-            border: 1px solid #ccc;
-            text-align: left;
-        }
-        th {
-            background-color: #f4f4f4;
-        }
+        body { font-family: Arial, sans-serif; margin: 40px; background: #fff; }
+        h1, h2 { text-align: center; color: #2c3e50; }
+        .chart { text-align: center; margin: 30px 0; }
+        .chart img { max-width: 600px; border: 1px solid #ddd; border-radius: 8px; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { padding: 12px; border: 1px solid #ccc; text-align: left; }
+        th { background-color: #f4f4f4; }
         .live { color: green; font-weight: bold; }
         .down { color: red; }
         .invalid { color: #999; }
-        .btn {
-            text-align: center;
-            margin: 20px 0;
-        }
+        .btn { text-align: center; margin: 20px 0; }
         button {
-            padding: 10px 20px;
-            font-size: 16px;
-            background: #007BFF;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        button:hover {
-            background: #0056b3;
+            padding: 10px 20px; font-size: 16px; background: #007BFF; color: white;
+            border: none; border-radius: 5px; cursor: pointer;
         }
     </style>
 </head>
@@ -58,7 +28,11 @@
 
     <div class="chart">
         <h2>Status Summary</h2>
-        <img src="image/png;base64,{{ chart_image }}" alt="Status Chart" style="max-width: 600px;" />
+        {% if chart_image %}
+            <img src="data:image/png;base64,{{ chart_image }}" alt="Status Chart" />
+        {% else %}
+            <p>No chart data available.</p>
+        {% endif %}
     </div>
 
     <h2>Results</h2>
