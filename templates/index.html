@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Live Domain Checker</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 40px;
+            background: #f8f9fa;
+            color: #333;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+        }
+        textarea {
+            width: 100%;
+            height: 200px;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+        }
+        .btn-save { background: #28a745; color: white; }
+        .btn-check { background: #007BFF; color: white; }
+        .btn-report { background: #FFC107; color: black; }
+        .btn-pdf { background: #DC3545; color: white; }
+
+        #status {
+            margin: 15px 0;
+            font-weight: bold;
+            color: #d9534f;
+        }
+
+        .progress-container {
+            margin: 10px 0;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .progress-bar-outer {
+            flex-grow: 1;
+            background: #ddd;
+            border-radius: 4px;
+            height: 24px;
+            overflow: hidden;
+        }
+        .progress-bar-inner {
+            width: 0%;
+            height: 100%;
+            background: #4CAF50;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .live { color: green; font-weight: bold; }
+        .down { color: red; }
+        .invalid { color: #999; }
+    </style>
+</head>
+<body>
+    <h1>🌐 Live Domain Checker</h1>
+
+    <textarea id="domainList" placeholder="Enter domains (one per line)...&#10;example.com&#10;www.google.com"></textarea>
+
+    <div>
+        <button class="btn-save" onclick="saveDomains()">💾 Save Domains</button>
+        <button class="btn-check" onclick="checkDomains()">🔍 Check All</button>
+        <button class="btn-report" onclick="location.href='/report'">📊 View Report</button>
+        <button class="btn-pdf" onclick="location.href='/report/pdf'">📥 Download PDF</button>
+    </div>
+
+    <div id="status">Status: Ready</div>
+
+    <div class="progress-container">
+        <span>Progress:</span>
+        <div class="progress-bar-outer">
+            <div id="progressBar" class="progress-bar-inner">0%</div>
+        </div>
+        <span id="progressText">0/0</span>
+    </div>
+
+    <table id="resultsTable">
+        <thead>
+            <tr>
+                <th>Domain</th>
+                <th>IP</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <script>
+        // Load domains when page is ready
+        document.addEventListener("DOMContentLoaded", loadDomains);
+
+        async function loadDomains() {
+            try {
+                const res = await fetch("/api/load");
+                const domains = await res.json();
+                document.getElementById("domainList").value = domains.join("\n");
+            } catch (err) {
+                console.error("Failed to load domains:", err);
+            }
+        }
+
+        async function saveDomains() {
+            const text = document.getElementById("domainList").value;
+            const domains = text.split("\n").map(d => d.trim()).filter(d => d);
+            try {
+                const res = await fetch("/api/save", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ domains })
+                });
+                const data = await res.json();
+                setStatus(`Saved ${data.saved} domains.`);
+            } catch (err) {
+                setStatus("❌ Save failed");
+                console.error(err);
+            }
+        }
+
+        async function checkDomains() {
+            const text = document.getElementById("domainList").value;
+            const domains = text.split("\n").map(d => d.trim()).filter(d => d);
+            if (domains.length === 0) {
+                setStatus("No domains to check!");
+                return;
+            }
+
+            // Reset UI
+            document.querySelector("#resultsTable tbody").innerHTML = "";
+            updateProgress(0, domains.length);
+            setStatus(`Checking 0/${domains.length}...`);
+
+            try {
+                const response = await fetch("/api/check", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ domains })
+                });
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = "";
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split("\n\n");
+                    buffer = lines.pop(); // Keep incomplete
+
+                    for (const line of lines) {
+                        if (line.startsWith("data:")) {
+                            const jsonStr = line.slice(5).trim();
+                            if (!jsonStr) continue;
+
+                            try {
+                                const data = JSON.parse(jsonStr);
+
+                                if (data.error) {
+                                    setStatus(`❌ ${data.error}`);
+                                    return;
+                                }
+
+                                if (data.type === "result") {
+                                    const tr = document.createElement("tr");
+                                    tr.innerHTML = `
+                                        <td>${data.data.domain}</td>
+                                        <td>${data.data.ip}</td>
+                                        <td class="${
+                                            data.data.status === 'LIVE' ? 'live' :
+                                            data.data.status === 'DOWN' ? 'down' : 'invalid'
+                                        }">${data.data.status}</td>
+                                    `;
+                                    document.querySelector("#resultsTable tbody").appendChild(tr);
+
+                                    updateProgress(data.progress.completed, data.progress.total);
+                                    setStatus(`✅ ${data.progress.completed}/${data.progress.total} checked`);
+                                }
+
+                                if (data.type === "complete") {
+                                    setStatus(`✅ Done: ${data.message}`);
+                                }
+                            } catch (e) {
+                                console.error("Parse error:", e, jsonStr);
+                            }
+                        }
+                    }
+                }
+            } catch (err) {
+                setStatus(`❌ Error: ${err.message}`);
+                console.error("Fetch error:", err);
+            }
+        }
+
+        function updateProgress(completed, total) {
+            const percent = Math.round((completed / total) * 100);
+            document.getElementById("progressBar").style.width = `${percent}%`;
+            document.getElementById("progressBar").textContent = `${percent}%`;
+            document.getElementById("progressText").textContent = `${completed}/${total}`;
+        }
+
+        function setStatus(msg) {
+            document.getElementById("status").textContent = msg;
+        }
+    </script>
+</body>
+</html>
