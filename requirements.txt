@@ -1,0 +1,4 @@
+Flask==3.0.3
+requests==2.31.0
+matplotlib==3.7.5
+weasyprint==60.1
