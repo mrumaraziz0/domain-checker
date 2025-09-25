@@ -24,7 +24,6 @@ Perfect for:
 ✅ **Export Full Report to PDF (with chart)**  
 ✅ **Clean UI with Responsive Design**  
 ✅ **Saves Domains for Future Use**  
-✅ **No Internet Required After Setup**
 
 ---
 
